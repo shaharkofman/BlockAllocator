@@ -1,58 +1,69 @@
+```markdown
 # Custom Block Memory Allocator in C++
 
-This project is a C++ implementation of a high-performance, fixed-size block (or "pool") memory allocator. It was developed to master low-level memory management concepts, pointer manipulation, and C++ class design.
+This project is a C++ implementation of a high-performance, fixed-size block (pool) memory allocator. It was developed to explore low-level memory management concepts, pointer manipulation, and efficient allocation strategies.
 
 ## 🎯 Purpose & Goals
 
-The primary goal of this allocator is to provide a fast alternative to frequent calls to `new` and `delete` (or `malloc` and `free`). Instead of asking the operating system for memory for every new object, this allocator:
+The primary goal of this allocator is to provide a fast alternative to frequent calls to `new`/`delete` (or `malloc`/`free`). Instead of asking the OS for memory on every allocation, this allocator:
 
-1.  **Acquires** one large block of memory from the OS on initialization.
-2.  **Manages** this block by dividing it into a "pool" of equal-sized chunks.
-3.  **Hands out** these chunks to the user upon request.
-4.  **Takes back** the chunks when the user is done, adding them back to a free list.
+1. Acquires one large block of memory from the OS on initialization.
+2. Manages that block by dividing it into a pool of equal-sized chunks.
+3. Hands out these chunks to the user on request.
+4. Takes chunks back when the user is done, returning them to a free list.
 
-This model is crucial for high-performance applications (like game engines or real-time systems) where the latency of standard memory allocation is a bottleneck.
+This model is useful for high-performance applications (for example, game engines or real-time systems) where the latency of standard memory allocation is a bottleneck.
 
 ## ✨ Core Features
 
-  * **High Performance:** Drastically reduces allocation/deallocation overhead by eliminating system calls.
-  * **Low Fragmentation:** Ideal for scenarios where objects of the same size are allocated and freed frequently.
-  * **"In-Place" Free List:** Uses the storage of the free blocks themselves to build a singly-linked list, requiring no extra memory for management.
-  * **Robust & Safe:**
-      * Correctly handles "out-of-memory" by returning `nullptr`.
-      * Silently enforces a minimum block size (`sizeof(void*)`) to prevent buffer overflows during free list management.
-  * **Clean C++ Design:** Encapsulates all logic within a `BlockAllocator` class, separating the interface (`.h`) from the implementation (`.cpp`).
+- High performance: reduces allocation/deallocation overhead by avoiding system calls for each allocation.
+- Low fragmentation: best suited for scenarios where objects of the same size are repeatedly allocated and freed.
+- In-place free list: uses the memory inside freed blocks to store the free list pointers, so no extra memory is required for management.
+- Robust & safe:
+  - Returns `nullptr` on out-of-memory.
+  - Enforces a minimum block size of at least `sizeof(void*)` to ensure safe free-list pointer storage.
+- Clean C++ design: logic is encapsulated in a `BlockAllocator` class, with a header and implementation file.
 
-🛠️ How to Build and Run
-The project is written in C++11 and includes a comprehensive test suite.
+## Files
+
+- `BlockAllocator.h` — public interface.
+- `BlockAllocator.cpp` — implementation (constructor, destructor, `allocate()`, `deallocate()`, `getBlockSize()`).
+- `main.cpp` — test program and benchmark harness.
+
+## 🛠️ Build and Run
+
+The project targets C++11 and includes a small test suite and benchmark.
 
 1. Compile
-To get the most realistic benchmark, compile with optimizations turned on (-O2 is standard):
 
-Bash
-
+```bash
 g++ main.cpp BlockAllocator.cpp -o my_allocator -std=c++11 -O2
-If you want to debug or see un-optimized behavior, you can use -O0.
+```
+
+For debugging or unoptimized behavior:
+
+```bash
+g++ main.cpp BlockAllocator.cpp -o my_allocator -std=c++11 -O0
+```
 
 2. Run
-Bash
 
+```bash
 ./my_allocator
-🚀 Performance Benchmark
-The main.cpp file contains a test suite that runs two tests:
+```
 
-Functional Test: Validates the core logic (allocation, deallocation, re-use, and out-of-memory handling).
+## 🚀 Performance Benchmark
 
-Benchmark Test: Proves the "optimized latency" claim by running a high-stress, realistic benchmark.
+The `main.cpp` test suite runs two tests:
 
-The "Steady State Churn" Test
-This test simulates a real-world, high-performance application (like a game engine or server) that has a large number of active objects (POOL_SIZE) and is constantly allocating and deallocating them (NUM_OPERATIONS).
+- Functional Test: Validates core allocator logic (allocation, deallocation, reuse, out-of-memory handling).
+- Benchmark Test: Runs a high-stress steady-state churn benchmark to compare the custom allocator with the system allocator.
 
-This "steady state churn" is a worst-case scenario for a general-purpose allocator (like new/delete) but the best-case scenario for a pool allocator.
+The steady-state churn test simulates a workload where a large number of objects are repeatedly replaced (allocated and freed), which is a worst-case for general-purpose allocators but a typical best-case for a pool allocator.
 
-Benchmark Results
-Here is the output from running the benchmark on a 2024 Apple M3 MacBook Air, comparing our BlockAllocator against the system's highly-optimized new/delete:
+Example benchmark output (run on a 2024 Apple M3 MacBook Air in the original README):
 
+```
 ========================================
   Custom Block Allocator Test Suite
 ========================================
@@ -82,6 +93,15 @@ Starting benchmark: 10000000 'replace' operations on a pool of 1000000 objects.
 ========================================
          All Tests Finished
 ========================================
-Conclusion: In a realistic, high-stress scenario, this simple pool allocator is over 6.8 times faster than the standard system allocator, successfully demonstrating its value for high-performance code.llocator` class interface (API).
-  * **`BlockAllocator.cpp`**: The implementation file. Contains the code for the constructor, destructor, `allocate()`, `deallocate()`, and `getBlockSize()`.
-  * **`main.cpp`**: A simple test program that creates an allocator, runs a series of tests, and validates its behavior.
+```
+
+Conclusion: In this steady-state churn scenario, the pool allocator shows a significant speedup versus repeated `new`/`delete`, demonstrating its usefulness for workloads with many short-lived, same-sized allocations.
+
+## Notes & Next Steps
+
+- This allocator is sized for fixed-size allocations. For variable sized allocations or more general-purpose needs, other allocators are more appropriate.
+- If you want, I can:
+  - open a PR with this README change,
+  - add a short CONTRIBUTING or USAGE section,
+  - or update the CI to build and run the test suite automatically.
+```
